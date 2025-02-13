@@ -25,7 +25,6 @@ def generate_image_from_lyrics(lyrics: str) -> str:
         os.makedirs(output_folder)
     
     try:
-        # Usar modelo base más ligero y configuración simplificada
         pipe = StableDiffusionPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
             torch_dtype=torch.float32
@@ -33,7 +32,6 @@ def generate_image_from_lyrics(lyrics: str) -> str:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe = pipe.to(device)
         
-        # Generar imagen con parámetros explícitos
         image = pipe(
             prompt=creative_prompt,
             num_inference_steps=30,
