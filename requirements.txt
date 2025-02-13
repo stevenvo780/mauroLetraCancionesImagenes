@@ -3,3 +3,5 @@ torch
 transformers
 diffusers
 accelerate
+requests
+bitsandbytes
