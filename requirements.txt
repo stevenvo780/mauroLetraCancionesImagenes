@@ -6,3 +6,5 @@ accelerate
 requests
 bitsandbytes
 flask
+google-generativeai
+python-dotenv

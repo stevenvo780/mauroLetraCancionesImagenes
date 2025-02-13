@@ -8,9 +8,7 @@ try:
     BNB_AVAILABLE = True
 except ImportError:
     BNB_AVAILABLE = False
-
 warnings.filterwarnings('ignore', message='Input type into Linear4bit.*')
-
 class LocalModel:
     DEFAULT_MODEL_NAME = "meta-llama/Llama-3.2-3B"
     def __init__(self, config: Optional[Dict[str, Any]] = None):
@@ -28,13 +26,7 @@ class LocalModel:
         else:
             if BNB_AVAILABLE:
                 try:
-                    quantization_config = BitsAndBytesConfig(
-                        load_in_4bit=True,
-                        bnb_4bit_compute_dtype=torch.float16,
-                        bnb_4bit_quant_type="nf4",
-                        bnb_4bit_use_double_quant=True,
-                        llm_int8_enable_fp32_cpu_offload=True
-                    )
+                    quantization_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, llm_int8_enable_fp32_cpu_offload=True)
                 except Exception as e:
                     logging.error(f"Error configurando quantization_config: {e}")
                     quantization_config = None
@@ -75,13 +67,12 @@ class LocalModel:
                     use_cache=True
                 )
             response = self.tokenizer.decode(outputs[0][input_ids.shape[1]:], skip_special_tokens=True, clean_up_tokenization_spaces=True).strip()
-            # Si la respuesta es muy corta, se solicita explícitamente un prompt más detallado.
-            if len(response.split()) < 10:
-                response = "Genera un prompt artístico y descriptivo, de al menos 50 palabras, basado en la siguiente letra: " + query
+            if len(response.split()) < 150:
+                response = "Genera un prompt artístico y descriptivo, de al menos 200 palabras, basado en la siguiente letra: " + query
             for prefix in ["Respuesta:", "Jarvis:", "Usuario:", "Asistente:"]:
                 if response.startswith(prefix):
                     response = response.replace(prefix, "", 1).strip()
-            return response if response and len(response.split()) >= 10 else "¿En qué puedo ayudarte?"
+            return response if response and len(response.split()) >= 150 else "¿En qué puedo ayudarte?"
         except Exception as e:
             logging.error(f"Error en el modelo local: {e}")
             return "Lo siento, hubo un error en el procesamiento. ¿Puedo ayudarte en algo más?"

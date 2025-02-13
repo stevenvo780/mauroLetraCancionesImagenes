@@ -1,3 +1,6 @@
+from dotenv import load_dotenv 
+load_dotenv() 
+
 from flask import Flask, request, render_template, jsonify, send_from_directory
 import lyrics
 import llm_image
