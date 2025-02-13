@@ -53,7 +53,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('songForm');
       const resultDiv = document.getElementById('result');
-
       function createOverlay() {
         const overlay = document.createElement('div');
         overlay.id = 'loadingOverlay';
@@ -71,11 +70,9 @@
           </div>`;
         return overlay;
       }
-
       form.addEventListener('submit', function(e) {
         e.preventDefault();
-        console.log('Formulario enviado'); // Debug
-
+        console.log('Formulario enviado');
         const overlay = createOverlay();
         document.body.appendChild(overlay);
         const progressBar = overlay.querySelector('#progressBar');
@@ -86,10 +83,7 @@
           progressBar.style.width = progress + '%';
           progressBar.setAttribute('aria-valuenow', progress);
         }, 300);
-
-        // Crear AbortController para poder cancelar la petición
         const controller = new AbortController();
-
         cancelBtn.addEventListener('click', function() {
           controller.abort();
           clearInterval(interval);
@@ -97,7 +91,6 @@
           resultDiv.innerHTML = `<div class="alert alert-warning">Generación cancelada.</div>`;
           console.log('Petición abortada');
         });
-
         const formData = new FormData(form);
         fetch("/generate", {
           method: "POST",

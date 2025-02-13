@@ -23,7 +23,6 @@ def generate():
             return jsonify({"error": error})
         return render_template("error.html", error=error)
     
-    # Leer los parámetros adicionales del formulario y convertirlos
     try:
         steps = int(request.form.get("steps", 50))
     except:

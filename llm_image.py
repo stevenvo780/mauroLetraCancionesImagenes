@@ -43,7 +43,6 @@ def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8
         )
         pipe = pipe.to(device)
         
-        # Incluir los parámetros de pasos, guidance y si se especifica, resolución
         pipe_args = {
             "prompt": creative_prompt,
             "num_inference_steps": steps,
@@ -67,7 +66,6 @@ def main():
     with open("lyrics.txt", "r", encoding="utf-8") as f:
         lyrics = f.read()
     
-    # Create a local image with the lyrics text
     img = Image.new("RGB", (config.IMAGE_WIDTH, config.IMAGE_HEIGHT), color=config.BACKGROUND_COLOR)
     draw = ImageDraw.Draw(img)
     font_path = config.FONT_PATH
