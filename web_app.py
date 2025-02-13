@@ -7,9 +7,13 @@ import llm_image
 
 app = Flask(__name__)
 
+# Historial de imágenes generadas
+history_images = []
+
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    # Mostrar la galería en la vista principal
+    return render_template("index.html", images=history_images)
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -42,6 +46,8 @@ def generate():
 
     img_path = llm_image.generate_image_from_lyrics(lyric_text, steps, guidance, gen_width, gen_height)
     if img_path:
+        # Guardar la imagen generada en el historial
+        history_images.append(img_path)
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"img_path": img_path})
         return render_template("generate.html", img_path=img_path)
@@ -49,6 +55,10 @@ def generate():
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"error": "No se pudo generar la imagen."})
         return render_template("error.html", error="No se pudo generar la imagen.")
+
+@app.route('/gallery', methods=["GET"])
+def gallery():
+    return render_template("gallery.html", images=history_images)
 
 @app.route('/output/<path:filename>')
 def output_file(filename):
