@@ -1,23 +1,27 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 import config
-import llm_lyrics
+import lyrics
 import llm_image
 
 def main():
     song_title = input("Ingrese el título de la canción: ")
-    lyrics = llm_lyrics.fetch_lyrics(song_title)
+    lyric_text = lyrics.fetch_lyrics(song_title)
     print("Letra obtenida:")
-    print(lyrics)
+    print(lyric_text)
 
-    img_path = llm_image.generate_image_from_lyrics(lyrics)
+    img_path = llm_image.generate_image_from_lyrics(lyric_text)
     if img_path:
-        print(f"Imagen generada por modelo local: {img_path}")
+        print("Imagen generada por modelo local:", img_path)
     else:
         print("No se pudo generar la imagen con el modelo local.")
 
     with open("lyrics.txt", "w", encoding="utf-8") as f:
-        f.write(lyrics)
+        f.write(lyric_text)
+
+    output_folder = "output"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
     local_img = Image.new(
         "RGB",
@@ -37,12 +41,13 @@ def main():
 
     draw.multiline_text(
         (50, 50),
-        lyrics,
+        lyric_text,
         font=font,
         fill=config.FONT_COLOR
     )
-    local_img.save(config.OUTPUT_FILENAME)
-    print(f"Imagen local guardada como: {config.OUTPUT_FILENAME}")
+    local_output = os.path.join(output_folder, config.OUTPUT_FILENAME)
+    local_img.save(local_output)
+    print("Imagen local guardada como:", local_output)
 
 if __name__ == "__main__":
     main()

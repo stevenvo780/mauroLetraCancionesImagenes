@@ -4,7 +4,6 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 def fetch_lyrics(song_info: str) -> str:
-    # Se espera que song_info tenga el formato "Artista - Título"
     parts = song_info.split(" - ", 1)
     if len(parts) < 2:
         return "Formato incorrecto. Use 'Artista - Título'."
@@ -24,14 +23,8 @@ def fetch_lyrics(song_info: str) -> str:
 def main():
     with open("lyrics.txt", "r", encoding="utf-8") as f:
         lyrics = f.read()
-    
-    img = Image.new(
-        "RGB",
-        (config.IMAGE_WIDTH, config.IMAGE_HEIGHT),
-        color=config.BACKGROUND_COLOR
-    )
+    img = Image.new("RGB", (config.IMAGE_WIDTH, config.IMAGE_HEIGHT), color=config.BACKGROUND_COLOR)
     draw = ImageDraw.Draw(img)
-    
     font_path = config.FONT_PATH
     if not os.path.exists(font_path):
         font = ImageFont.load_default()
@@ -40,18 +33,14 @@ def main():
             font = ImageFont.truetype(font_path, config.FONT_SIZE)
         except:
             font = ImageFont.load_default()
-    
-    draw.multiline_text(
-        (50, 50),
-        lyrics,
-        fill=config.FONT_COLOR,
-        font=font,
-    )
-    
-    img.save(config.OUTPUT_FILENAME)
-    print(f"Imagen generada: {config.OUTPUT_FILENAME}")
+    draw.multiline_text((50, 50), lyrics, fill=config.FONT_COLOR, font=font)
+    output_folder = "output"
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    local_out = os.path.join(output_folder, config.OUTPUT_FILENAME)
+    img.save(local_out)
+    print("Imagen generada:", local_out)
 
 if __name__ == "__main__":
     main()
-    # Test simple: Ingrese "Artista - Título"
     print(fetch_lyrics("Coldplay - Yellow"))
