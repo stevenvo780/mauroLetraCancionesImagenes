@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, jsonify
+from flask import Flask, request, render_template, redirect, url_for, jsonify, send_from_directory
 import lyrics
 import llm_image
 
@@ -18,13 +18,27 @@ def generate():
         lyric_text = lyrics.fetch_lyrics(song_title)
         if not lyric_text or "No se encontraron letras" in lyric_text:
             error = "No se encontraron letras para la canción ingresada."
-    # Si se produjo error, responder acorde
     if error:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"error": error})
         return render_template("error.html", error=error)
-        
-    img_path = llm_image.generate_image_from_lyrics(lyric_text)
+    
+    # Leer los parámetros adicionales del formulario y convertirlos
+    try:
+        steps = int(request.form.get("steps", 50))
+    except:
+        steps = 50
+    try:
+        guidance = float(request.form.get("guidance", 8.0))
+    except:
+        guidance = 8.0
+    try:
+        gen_width = int(request.form.get("gen_width", 512))
+        gen_height = int(request.form.get("gen_height", 512))
+    except:
+        gen_width, gen_height = 512, 512
+
+    img_path = llm_image.generate_image_from_lyrics(lyric_text, steps, guidance, gen_width, gen_height)
     if img_path:
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"img_path": img_path})
@@ -33,6 +47,10 @@ def generate():
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return jsonify({"error": "No se pudo generar la imagen."})
         return render_template("error.html", error="No se pudo generar la imagen.")
+
+@app.route('/output/<path:filename>')
+def output_file(filename):
+    return send_from_directory('output', filename)
 
 if __name__ == "__main__":
     app.run(debug=True)

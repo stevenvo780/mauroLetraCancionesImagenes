@@ -7,8 +7,7 @@ from local_model import LocalModel
 
 local_model = LocalModel()
 
-def generate_image_from_lyrics(lyrics: str) -> str:
-    # Create a creative prompt from the lyrics using the local model
+def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8.0, gen_width: int = None, gen_height: int = None) -> str:
     prompt_input = (
         "Convert the following lyrics into a creative prompt for generating a high-quality digital image. "
         "Use descriptive language with artistic details, cinematic atmosphere, balanced composition, and vibrant colors. Lyrics: " + lyrics
@@ -23,7 +22,6 @@ def generate_image_from_lyrics(lyrics: str) -> str:
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
-    # Determine which device to use
     if torch.cuda.is_available():
         device = "cuda"
         dtype_arg = {"torch_dtype": torch.float16}
@@ -32,26 +30,30 @@ def generate_image_from_lyrics(lyrics: str) -> str:
         dtype_arg = {"torch_dtype": torch.float16}
     else:
         device = "cpu"
-        print("WARNING: No accelerator found. Running on CPU with default float32 precision (this may be very slow or may fail).", flush=True)
-        dtype_arg = {}  # Do not set float16 on CPU
+        print("WARNING: No accelerator found. Running on CPU with default float32 precision.", flush=True)
+        dtype_arg = {}
 
     try:
-        # Load the SDXL pipeline using the fp16 variant if accelerator is available
         pipe = StableDiffusionXLPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0",
-            variant="fp16",             # Use the fp16 checkpoint variant
-            use_safetensors=True,       # For faster and safer weight loading
-            safety_checker=None,        # Optionally disable safety checker
+            variant="fp16",
+            use_safetensors=True,
+            safety_checker=None,
             **dtype_arg
         )
         pipe = pipe.to(device)
         
-        # Generate the image with a higher number of inference steps and guidance scale for improved quality
-        image = pipe(
-            prompt=creative_prompt,
-            num_inference_steps=50,
-            guidance_scale=8.0
-        ).images[0]
+        # Incluir los parámetros de pasos, guidance y si se especifica, resolución
+        pipe_args = {
+            "prompt": creative_prompt,
+            "num_inference_steps": steps,
+            "guidance_scale": guidance
+        }
+        if gen_width and gen_height:
+            pipe_args["width"] = gen_width
+            pipe_args["height"] = gen_height
+        
+        image = pipe(**pipe_args).images[0]
         
         image_path = os.path.join(output_folder, "sd_output.png")
         image.save(image_path)
