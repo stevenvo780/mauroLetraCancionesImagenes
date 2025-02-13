@@ -22,16 +22,9 @@ def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
-    if torch.cuda.is_available():
-        device = "cuda"
-        dtype_arg = {"torch_dtype": torch.float16}
-    elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
-        device = "mps"
-        dtype_arg = {"torch_dtype": torch.float16}
-    else:
-        device = "cpu"
-        print("WARNING: No accelerator found. Running on CPU with default float32 precision.", flush=True)
-        dtype_arg = {}
+    device = "cpu"
+    dtype_arg = {"torch_dtype": torch.float32}
+    print("WARNING: Forcing CPU usage for image generation.", flush=True)
 
     try:
         pipe = StableDiffusionXLPipeline.from_pretrained(
