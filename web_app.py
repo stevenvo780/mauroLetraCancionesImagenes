@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, jsonify, send_from_directory
+from flask import Flask, request, render_template, jsonify, send_from_directory
 import lyrics
 import llm_image
 
@@ -52,4 +52,4 @@ def output_file(filename):
     return send_from_directory('output', filename)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
