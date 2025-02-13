@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Imagen Generada</title>
+</head>
+<body>
+  <div class="container mt-5 text-center">
+    <h1 class="mb-4">Imagen Generada</h1>
+    <img src="/{{ img_path }}" alt="Imagen generada" class="img-fluid mb-4">
+    <br>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Generar otra imagen</a>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
