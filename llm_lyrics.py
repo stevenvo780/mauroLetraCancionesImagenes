@@ -1,21 +1,25 @@
-from transformers import pipeline
+import requests
 import config
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-generator = pipeline("text-generation", model="gpt2")
-
-def fetch_lyrics(song_title: str) -> str:
-    prompt = f"Find the full lyrics for the song '{song_title}'. Provide only the lyrics."
+def fetch_lyrics(song_info: str) -> str:
+    # Se espera que song_info tenga el formato "Artista - Título"
+    parts = song_info.split(" - ", 1)
+    if len(parts) < 2:
+        return "Formato incorrecto. Use 'Artista - Título'."
+    artist, title = parts[0].strip(), parts[1].strip()
+    url = f"https://api.lyrics.ovh/v1/{artist}/{title}"
     try:
-        result = generator(prompt, max_length=500, num_return_sequences=1)
-        lyrics = result[0]['generated_text']
-        if lyrics.startswith(prompt):
-            lyrics = lyrics[len(prompt):].strip()
-        return lyrics
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            lyrics = data.get("lyrics", "No se encontraron letras.")
+            return lyrics
+        else:
+            return "No se encontraron letras."
     except Exception as e:
-        print("Error al obtener la letra:", e)
-        return "No lyrics found."
+        return f"Error al obtener la letra: {e}"
 
 def main():
     with open("lyrics.txt", "r", encoding="utf-8") as f:
@@ -30,12 +34,12 @@ def main():
     
     font_path = config.FONT_PATH
     if not os.path.exists(font_path):
+        font = ImageFont.load_default()
+    else:
         try:
             font = ImageFont.truetype(font_path, config.FONT_SIZE)
         except:
             font = ImageFont.load_default()
-    else:
-        font = ImageFont.load_default()
     
     draw.multiline_text(
         (50, 50),
@@ -49,3 +53,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Test simple: Ingrese "Artista - Título"
+    print(fetch_lyrics("Coldplay - Yellow"))
