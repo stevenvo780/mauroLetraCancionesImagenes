@@ -28,7 +28,13 @@ class LocalModel:
         else:
             if BNB_AVAILABLE:
                 try:
-                    quantization_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True, llm_int8_enable_fp32_cpu_offload=True)
+                    quantization_config = BitsAndBytesConfig(
+                        load_in_4bit=True,
+                        bnb_4bit_compute_dtype=torch.float16,
+                        bnb_4bit_quant_type="nf4",
+                        bnb_4bit_use_double_quant=True,
+                        llm_int8_enable_fp32_cpu_offload=True
+                    )
                 except Exception as e:
                     logging.error(f"Error configurando quantization_config: {e}")
                     quantization_config = None
@@ -54,13 +60,28 @@ class LocalModel:
             input_ids = encoded["input_ids"].to(self.model.device)
             attention_mask = encoded["attention_mask"].to(self.model.device)
             with torch.inference_mode():
-                outputs = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, max_new_tokens=100, num_return_sequences=1, temperature=0.3, do_sample=True, top_k=20, top_p=0.85, repetition_penalty=1.1, pad_token_id=self.tokenizer.pad_token_id, eos_token_id=self.tokenizer.eos_token_id, use_cache=True)
+                outputs = self.model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    max_new_tokens=150,
+                    num_return_sequences=1,
+                    temperature=0.7,
+                    do_sample=True,
+                    top_k=50,
+                    top_p=0.95,
+                    repetition_penalty=1.1,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    eos_token_id=self.tokenizer.eos_token_id,
+                    use_cache=True
+                )
             response = self.tokenizer.decode(outputs[0][input_ids.shape[1]:], skip_special_tokens=True, clean_up_tokenization_spaces=True).strip()
-            response = response.split('\n')[0]
+            # Si la respuesta es muy corta, se solicita explícitamente un prompt más detallado.
+            if len(response.split()) < 10:
+                response = "Genera un prompt artístico y descriptivo, de al menos 50 palabras, basado en la siguiente letra: " + query
             for prefix in ["Respuesta:", "Jarvis:", "Usuario:", "Asistente:"]:
                 if response.startswith(prefix):
                     response = response.replace(prefix, "", 1).strip()
-            return response if response and len(response) >= 2 else "¿En qué puedo ayudarte?"
+            return response if response and len(response.split()) >= 10 else "¿En qué puedo ayudarte?"
         except Exception as e:
             logging.error(f"Error en el modelo local: {e}")
             return "Lo siento, hubo un error en el procesamiento. ¿Puedo ayudarte en algo más?"

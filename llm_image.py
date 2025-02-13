@@ -1,16 +1,18 @@
 import os
 import config
 from PIL import Image, ImageDraw, ImageFont
-from diffusers import StableDiffusionXLPipeline
+from diffusers import StableDiffusionPipeline
 import torch
 from local_model import LocalModel
 
 local_model = LocalModel()
 
 def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8.0, gen_width: int = None, gen_height: int = None) -> str:
+    # Se añade la condición de generar al menos 50 palabras en el prompt creativo
     prompt_input = (
-        "Convert the following lyrics into a creative prompt for generating a high-quality digital image. "
-        "Use descriptive language with artistic details, cinematic atmosphere, balanced composition, and vibrant colors. Lyrics: " + lyrics
+        "Dada la siguiente letra compleja y rica en detalles, genera un prompt artístico y descriptivo, de al menos 50 palabras, "
+        "para crear una imagen digital de alta calidad. Incluye elementos visuales, atmósfera cinematográfica, colores vibrantes, "
+        "composición equilibrada y un estilo único. Letra: " + lyrics
     )
     creative_prompt = local_model.get_response(prompt_input)
     print("Generated creative prompt:", creative_prompt, flush=True)
@@ -23,17 +25,16 @@ def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8
         os.makedirs(output_folder)
     
     device = "cpu"
-    dtype_arg = {"torch_dtype": torch.float32}
     print("WARNING: Forcing CPU usage for image generation.", flush=True)
 
     try:
-        pipe = StableDiffusionXLPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0",
-            variant="fp16",
-            use_safetensors=True,
-            safety_checker=None,
-            **dtype_arg
+        model_id = "runwayml/stable-diffusion-v1-5"
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=torch.float32,
+            low_cpu_mem_usage=True
         )
+        pipe.enable_attention_slicing()  # Reduce la huella de memoria durante la inferencia
         pipe = pipe.to(device)
         
         pipe_args = {
