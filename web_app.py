@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, jsonify
 import lyrics
 import llm_image
 
@@ -18,14 +18,20 @@ def generate():
         lyric_text = lyrics.fetch_lyrics(song_title)
         if not lyric_text or "No se encontraron letras" in lyric_text:
             error = "No se encontraron letras para la canción ingresada."
-
+    # Si se produjo error, responder acorde
     if error:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"error": error})
         return render_template("error.html", error=error)
-    
+        
     img_path = llm_image.generate_image_from_lyrics(lyric_text)
     if img_path:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"img_path": img_path})
         return render_template("generate.html", img_path=img_path)
     else:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"error": "No se pudo generar la imagen."})
         return render_template("error.html", error="No se pudo generar la imagen.")
 
 if __name__ == "__main__":
