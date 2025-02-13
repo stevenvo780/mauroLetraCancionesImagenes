@@ -8,21 +8,44 @@ from local_model import LocalModel
 local_model = LocalModel()
 
 def generate_image_from_lyrics(lyrics: str) -> str:
-    creative_prompt = local_model.get_response("A partir de la siguiente letra, genera una descripción creativa para una imagen: " + lyrics)
+    prompt_input = (
+        "Convierte la siguiente letra en un prompt creativo para generar una imagen digital "
+        "de alta calidad. Emplea un lenguaje descriptivo, incluyendo detalles artísticos, "
+        "ambientación cinematográfica, composición equilibrada y colores vibrantes. Letra: " + 
+        lyrics
+    )
+    creative_prompt = local_model.get_response(prompt_input)
     print("Prompt creativo generado:", creative_prompt)
+    if not creative_prompt:
+        print("El modelo no devolvió un prompt válido.")
+        return ""
+    
     output_folder = "output"
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    
     try:
-        pipe = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", torch_dtype=torch.float32, safety_checker=None)
+        # Usar modelo base más ligero y configuración simplificada
+        pipe = StableDiffusionPipeline.from_pretrained(
+            "runwayml/stable-diffusion-v1-5",
+            torch_dtype=torch.float32
+        )
         device = "cuda" if torch.cuda.is_available() else "cpu"
         pipe = pipe.to(device)
-        image = pipe(creative_prompt).images[0]
+        
+        # Generar imagen con parámetros explícitos
+        image = pipe(
+            prompt=creative_prompt,
+            num_inference_steps=30,
+            guidance_scale=7.5
+        ).images[0]
+        
         image_path = os.path.join(output_folder, "sd_output.png")
         image.save(image_path)
         return image_path
     except Exception as e:
         print("Error al generar la imagen:", e)
+        print("Detalles del error:", str(e))
         return ""
 
 def main():
