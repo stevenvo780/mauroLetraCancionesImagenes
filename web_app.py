@@ -52,4 +52,4 @@ def output_file(filename):
     return send_from_directory('output', filename)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=True, use_reloader=False)
