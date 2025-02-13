@@ -11,7 +11,7 @@ class GoogleModel():
         self.api_key = api_key
         default_config = {'model_name': "gemini-2.0-flash-exp"}
         merged_config = {**default_config, **(config or {})}
-        self.config = merged_config  # cambio realizado
+        self.config = merged_config
         genai.configure(api_key=self.api_key)
         self.logger = logging.getLogger(__name__)
     def get_response(self, query: str) -> str:

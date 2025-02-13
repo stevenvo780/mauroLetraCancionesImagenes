@@ -1,5 +1,5 @@
 import os
-import uuid  # Nuevo import para generar UID
+import uuid
 import config
 from PIL import Image, ImageDraw, ImageFont
 from diffusers import StableDiffusionPipeline
@@ -44,7 +44,6 @@ def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8
             pipe_args["width"] = gen_width
             pipe_args["height"] = gen_height
         image = pipe(**pipe_args).images[0]
-        # Generar un nombre único para el archivo
         unique_id = uuid.uuid4().hex
         image_filename = f"sd_output_{unique_id}.png"
         image_path = os.path.join(output_folder, image_filename)
