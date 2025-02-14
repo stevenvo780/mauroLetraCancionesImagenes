@@ -20,15 +20,28 @@ if os.path.exists(output_dir):
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html", images=history_images)
+    page = request.args.get('page', 1, type=int)
+    output_dir = os.path.join(os.path.dirname(__file__), 'output')
+    images = []
+    if os.path.exists(output_dir):
+        images = [os.path.join("output", f) for f in os.listdir(output_dir) if f.endswith(".png")]
+        images.sort(key=lambda img: os.path.getmtime(os.path.join(os.path.dirname(__file__), img)), reverse=True)
+    per_page = 6
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_images = images[start:end]
+    total_pages = (len(images) + per_page - 1) // per_page
+    return render_template("index.html", images=paginated_images, page=page, total_pages=total_pages)
 
 @app.route("/generate", methods=["GET"])
 def generate():
     song_title = request.args.get("song_title", "").strip()
     error = None
+    progress_queue = queue.Queue()
     if not song_title or " - " not in song_title:
         error = "Formato incorrecto. Use 'Artista - Título'."
     else:
+        progress_queue.put(("info", "Extrayendo la letra y creando prompt..."))
         lyric_text = lyrics.fetch_lyrics(song_title)
         if not lyric_text or "No se encontró la letra" in lyric_text:
             error = "No se encontró la letra para la canción ingresada."
@@ -49,7 +62,6 @@ def generate():
     except:
         gen_width, gen_height = 512, 512
 
-    progress_queue = queue.Queue()
     result = {"img_path": None, "error": None}
 
     def callback(step, timestep, latents):
@@ -57,7 +69,10 @@ def generate():
         progress_queue.put(("progress", progress))
 
     def background_task():
-        img_path = llm_image.generate_image_from_lyrics(lyric_text, steps, guidance, gen_width, gen_height, callback=callback)
+        progress_queue.put(("info", "Generando prompt..."))
+        creative_prompt = lyrics.generate_creative_prompt(lyric_text)
+        progress_queue.put(("info", "Generando imagen..."))
+        img_path = llm_image.generate_image_from_lyrics(creative_prompt, steps, guidance, gen_width, gen_height, callback=callback)
         if img_path:
             result["img_path"] = img_path
             history_images.insert(0, img_path)
@@ -75,6 +90,8 @@ def generate():
                 event, data = progress_queue.get(timeout=0.5)
                 if event == "progress":
                     yield f"data: progress:{data}\n\n"
+                elif event == "info":
+                    yield f"data: info:{data}\n\n"
                 elif event == "done":
                     if data["error"]:
                         yield f"data: error:{data['error']}\n\n"
@@ -86,15 +103,18 @@ def generate():
 
 @app.route('/gallery', methods=["GET"])
 def gallery():
-    try:
-        page = int(request.args.get('page', 1))
-    except:
-        page = 1
-    per_page = 12
+    output_dir = os.path.join(os.path.dirname(__file__), 'output')
+    images = []
+    if os.path.exists(output_dir):
+        images = [os.path.join("output", f) for f in os.listdir(output_dir) if f.endswith(".png")]
+        images.sort(key=lambda img: os.path.getmtime(os.path.join(os.path.dirname(__file__), img)), reverse=True)
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 6
     start = (page - 1) * per_page
     end = start + per_page
-    paginated_images = history_images[start:end]
-    total_pages = (len(history_images) + per_page - 1) // per_page
+    paginated_images = images[start:end]
+    total_pages = (len(images) + per_page - 1) // per_page
     return render_template("gallery.html", images=paginated_images, page=page, total_pages=total_pages)
 
 @app.route('/output/<path:filename>')
