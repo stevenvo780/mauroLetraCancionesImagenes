@@ -17,15 +17,32 @@
       justify-content: center;
       flex-direction: column;
     }
+    .navbar-custom {
+      background-color: #000000;
+    }
+    .navbar-custom .navbar-brand,
+    .navbar-custom .navbar-text {
+      color: #fefefe;
+    }
+    .btn-primary {
+      background-color: #c50043;
+      border-color: #c50043;
+    }
+    .btn-primary:hover {
+      background-color: #c16022;
+      border-color: #c16022;
+    }
+    h1, h2 {
+      color: #1f374f;
+    }
   </style>
 </head>
 <body>
-  <!-- Nuevo header con navbar de Bootstrap -->
   <header>
-    <nav class="navbar navbar-light bg-light">
+    <nav class="navbar navbar-custom">
       <div class="container">
         <a class="navbar-brand" href="#">
-          <img src="/static/logo.svg" alt="Logo" style="max-width:400px;">
+          <img src="/static/logo.svg" alt="Logo" style="max-width:500px;">
         </a>
         <span class="navbar-text h4 mb-0">SongArt</span>
       </div>
