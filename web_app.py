@@ -63,6 +63,30 @@ def generate():
             result["img_path"] = img_path
             history_images.append(img_path)
         else:
+            result["error"] = "No se pudo generar la imagen."
+        progress_queue.put(("done", result))
+
+    thread = threading.Thread(target=background_task)
+    thread.start()
+
+    @stream_with_context
+    def event_stream():
+        while thread.is_alive() or not progress_queue.empty():
+            try:
+                event, data = progress_queue.get(timeout=0.5)
+                if event == "progress":
+                    yield f"data: progress:{data}\n\n"
+                elif event == "done":
+                    if data["error"]:
+                        yield f"data: error:{data['error']}\n\n"
+                    else:
+                        yield f"data: done:{data['img_path']}\n\n"
+            except queue.Empty:
+                continue
+    return Response(event_stream(), mimetype="text/event-stream")
+
+@app.route('/gallery', methods=["GET"])
+def gallery():
     try:
         page = int(request.args.get('page', 1))
     except:

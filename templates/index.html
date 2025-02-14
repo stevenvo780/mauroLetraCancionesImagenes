@@ -22,7 +22,8 @@
 <body>
   <div class="container mt-5">
     <h1 class="mb-4">Generador de Imágenes de Canciones</h1>
-    <form id="songForm" method="post">
+    <!-- Se cambia el método a GET para usar SSE -->
+    <form id="songForm" method="get">
       <div class="row">
         <div class="col-12 mb-3">
           <label for="song_title" class="form-label">Ingrese "Artista - Título"</label>
@@ -71,7 +72,8 @@
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.getElementById('songForm');
       const resultDiv = document.getElementById('result');
-      function createOverlay() {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
         const overlay = document.createElement('div');
         overlay.id = 'loadingOverlay';
         overlay.innerHTML = `
@@ -84,66 +86,34 @@
                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
             </div>
             <p class="mt-2">Generando imagen, por favor espere...</p>
-            <button id="cancelBtn" class="btn btn-danger mt-3">Cancelar</button>
           </div>`;
-        return overlay;
-      }
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        console.log('Formulario enviado');
-        const overlay = createOverlay();
         document.body.appendChild(overlay);
-        const progressBar = overlay.querySelector('#progressBar');
-        const cancelBtn = overlay.querySelector('#cancelBtn');
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress = Math.min(progress + 5, 90);
-          progressBar.style.width = progress + '%';
-          progressBar.setAttribute('aria-valuenow', progress);
-        }, 300);
-        const controller = new AbortController();
-        cancelBtn.addEventListener('click', function() {
-          controller.abort();
-          clearInterval(interval);
-          overlay.remove();
-          resultDiv.innerHTML = `<div class="alert alert-warning">Generación cancelada.</div>`;
-          console.log('Petición abortada');
-        });
-        const formData = new FormData(form);
-        fetch("/generate", {
-          method: "POST",
-          body: formData,
-          headers: { "X-Requested-With": "XMLHttpRequest" },
-          signal: controller.signal
-        })
-        .then(response => response.json())
-        .then(data => {
-          clearInterval(interval);
-          progressBar.style.width = '100%';
-          progressBar.setAttribute('aria-valuenow', 100);
-          setTimeout(() => overlay.remove(), 500);
-          if (data.error) {
-            resultDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>
-                                   <a href="/" class="btn btn-secondary">Volver</a>`;
-          } else if (data.img_path) {
+        const progressBar = document.getElementById('progressBar');
+        const params = new URLSearchParams(new FormData(form)).toString();
+        const evtSource = new EventSource("/generate?" + params);
+        evtSource.onmessage = function(e) {
+          if(e.data.startsWith("progress:")){
+            const progressVal = e.data.split(":")[1];
+            progressBar.style.width = progressVal + '%';
+            progressBar.setAttribute('aria-valuenow', progressVal);
+          } else if(e.data.startsWith("done:")){
+            evtSource.close();
+            const imgPath = e.data.split("done:")[1];
+            overlay.remove();
             resultDiv.innerHTML = `<h1 class="mb-4 text-center">Imagen Generada</h1>
               <div class="text-center">
-                <img src="/${data.img_path}" alt="Imagen generada" class="img-fluid mb-4">
+                <img src="/${imgPath}" alt="Imagen generada" class="img-fluid mb-4">
                 <br>
                 <a href="/" class="btn btn-primary">Generar otra imagen</a>
               </div>`;
+          } else if(e.data.startsWith("error:")){
+            evtSource.close();
+            overlay.remove();
+            const errorMsg = e.data.split("error:")[1];
+            resultDiv.innerHTML = `<div class="alert alert-danger">${errorMsg}</div>
+                                   <a href="/" class="btn btn-secondary">Volver</a>`;
           }
-        })
-        .catch(error => {
-          clearInterval(interval);
-          overlay.remove();
-          if(error.name === 'AbortError'){
-            console.log('Fetch abortado.');
-          } else {
-            resultDiv.innerHTML = `<div class="alert alert-danger">Ocurrió un error. Inténtelo de nuevo.</div>
-                                 <a href="/" class="btn btn-secondary">Volver</a>`;
-          }
-        });
+        };
       });
     });
   </script>
