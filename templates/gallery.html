@@ -14,9 +14,48 @@
             <div class="col-md-4 mb-4">
                 <div class="card">
                     <img src="/{{ img }}" class="card-img-top" alt="Imagen generada">
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <!-- Se muestra el nombre del archivo como nombre de la canción -->
+                                <h5 class="card-title">{{ img.split('/')[-1] }}</h5>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <a href="#" class="btn btn-secondary btn-sm btn-block">Editar</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="#" class="btn btn-danger btn-sm btn-block">Eliminar</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% endfor %}
+        </div>
+        <div class="row">
+          <div class="col-12 d-flex justify-content-center">
+            <nav>
+              <ul class="pagination">
+                 {% if page > 1 %}
+                 <li class="page-item">
+                   <a class="page-link" href="{{ url_for('gallery') }}?page={{ page-1 }}">Anterior</a>
+                 </li>
+                 {% endif %}
+                 {% for p in range(1, total_pages+1) %}
+                 <li class="page-item {% if p == page %}active{% endif %}">
+                   <a class="page-link" href="{{ url_for('gallery') }}?page={{ p }}">{{ p }}</a>
+                 </li>
+                 {% endfor %}
+                 {% if page < total_pages %}
+                 <li class="page-item">
+                   <a class="page-link" href="{{ url_for('gallery') }}?page={{ page+1 }}">Siguiente</a>
+                 </li>
+                 {% endif %}
+              </ul>
+            </nav>
+          </div>
         </div>
         <div class="text-center">
             <a href="{{ url_for('index') }}" class="btn btn-primary">Volver al Inicio</a>

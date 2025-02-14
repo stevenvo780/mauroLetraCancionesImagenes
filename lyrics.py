@@ -13,10 +13,11 @@ def fetch_lyrics(song_info: str) -> str:
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            lyrics = data.get("lyrics", "No se encontraron letras.")
-            return lyrics
+            # Retorna mensaje actualizado si no se obtiene letra
+            lyrics_text = data.get("lyrics", "").strip()
+            return lyrics_text if lyrics_text else "No se encontró la letra para esa canción."
         else:
-            return "No se encontraron letras."
+            return "No se encontró la letra para esa canción."
     except Exception as e:
         return f"Error al obtener la letra: {e}"
 
