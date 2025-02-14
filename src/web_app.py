@@ -16,6 +16,8 @@ app = Flask(__name__,
 
 output_dir = os.path.join(base_dir, 'output')
 history_images = []
+history_images_lock = threading.Lock()
+
 if os.path.exists(output_dir):
     for file in os.listdir(output_dir):
         if file.endswith(".png"):
@@ -79,7 +81,8 @@ def generate():
         if img_path:
             img_path = img_path.replace(base_dir, '').lstrip('/')
             result["img_path"] = img_path
-            history_images.insert(0, img_path)
+            with history_images_lock:
+                history_images.insert(0, img_path)
         else:
             result["error"] = "No se pudo generar la imagen."
         progress_queue.put(("done", result))

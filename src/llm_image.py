@@ -2,16 +2,18 @@ import os
 import uuid
 from diffusers import StableDiffusionPipeline
 import torch
+import logging
+
+use_gpu = os.getenv("USE_GPU", "true").lower() in ["true", "1", "yes"]
+device = "cuda" if torch.cuda.is_available() and use_gpu else "cpu"
 
 def generate_image_from_lyrics(creative_prompt: str, steps: int = 20, guidance: float = 8.0, gen_width: int = None, gen_height: int = None, callback=None) -> str:
     if not creative_prompt:
         return ""
-    print(f"Prompt generado: {creative_prompt}")
     base_dir = os.path.dirname(os.path.dirname(__file__))
     output_folder = os.path.join(base_dir, "output")
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    device = "cpu"
     try:
         model_id = "runwayml/stable-diffusion-v1-5"
         pipe = StableDiffusionPipeline.from_pretrained(
@@ -37,8 +39,7 @@ def generate_image_from_lyrics(creative_prompt: str, steps: int = 20, guidance: 
         image_filename = f"sd_output_{unique_id}.png"
         image_path = os.path.join(output_folder, image_filename)
         image.save(image_path)
-        print("Image generated:", image_path, flush=True)
         return image_path
     except Exception as e:
-        print("Error generating image:", e, flush=True)
+        logging.error("Error generating image: %s", e, exc_info=True)
         return ""
