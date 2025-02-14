@@ -1,5 +1,4 @@
 import requests
-import config
 import os
 from PIL import Image, ImageDraw, ImageFont
 from google_model import GoogleModel
@@ -35,28 +34,3 @@ def generate_creative_prompt(lyrics_text: str) -> str:
     if not creative_prompt or creative_prompt == "No se pudo obtener respuesta del modelo.":
         creative_prompt = local_model.get_response(prompt_input)
     return creative_prompt
-
-def main():
-    with open("lyrics.txt", "r", encoding="utf-8") as f:
-        lyrics = f.read()
-    img = Image.new("RGB", (config.IMAGE_WIDTH, config.IMAGE_HEIGHT), color=config.BACKGROUND_COLOR)
-    draw = ImageDraw.Draw(img)
-    font_path = config.FONT_PATH
-    if not os.path.exists(font_path):
-        font = ImageFont.load_default()
-    else:
-        try:
-            font = ImageFont.truetype(font_path, config.FONT_SIZE)
-        except:
-            font = ImageFont.load_default()
-    draw.multiline_text((50, 50), lyrics, fill=config.FONT_COLOR, font=font)
-    output_folder = "output"
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    local_out = os.path.join(output_folder, config.OUTPUT_FILENAME)
-    img.save(local_out)
-    print("Imagen generada:", local_out)
-
-if __name__ == "__main__":
-    main()
-    print(fetch_lyrics("Coldplay - Yellow"))
