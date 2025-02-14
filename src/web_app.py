@@ -1,6 +1,8 @@
 import os
 import queue
 import threading
+import uuid
+import concurrent.futures
 from flask import Flask, request, render_template, Response, stream_with_context, send_from_directory
 from dotenv import load_dotenv 
 load_dotenv() 
@@ -23,6 +25,9 @@ if os.path.exists(output_dir):
         if file.endswith(".png"):
             history_images.append(os.path.join("output", file))
 
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count())
+jobs = {}  # Diccionario global para rastrear tareas
+
 @app.route("/", methods=["GET"])
 def index():
     page = request.args.get('page', 1, type=int)
@@ -40,59 +45,68 @@ def index():
 
 @app.route("/generate", methods=["GET"])
 def generate():
-    song_title = request.args.get("song_title", "").strip()
-    error = None
-    progress_queue = queue.Queue()
-    if not song_title or " - " not in song_title:
-        error = "Formato incorrecto. Use 'Artista - Título'."
+    job_id = request.args.get("job_id")
+    if job_id and job_id in jobs:
+        job = jobs[job_id]
+        future = job["future"]
+        progress_queue = job["queue"]
     else:
-        progress_queue.put(("info", "Extrayendo la letra y creando prompt..."))
-        lyric_text = lyrics.fetch_lyrics(song_title)
-        if not lyric_text or "No se encontró la letra" in lyric_text:
-            error = "No se encontró la letra para la canción ingresada."
-    if error:
-        return Response(f"data: error:{error}\n\n", mimetype="text/event-stream")
-
-    try:
-        steps = int(request.args.get("steps", 20))
-    except:
-        steps = 20
-    try:
-        guidance = float(request.args.get("guidance", 8.0))
-    except:
-        guidance = 8.0
-    try:
-        gen_width = int(request.args.get("gen_width", 512))
-        gen_height = int(request.args.get("gen_height", 512))
-    except:
-        gen_width, gen_height = 512, 512
-
-    result = {"img_path": None, "error": None}
-
-    def callback(step, timestep, latents):
-        progress = int((step / steps) * 100)
-        progress_queue.put(("progress", progress))
-
-    def background_task():
-        progress_queue.put(("info", "Generando prompt..."))
-        creative_prompt = lyrics.generate_creative_prompt(lyric_text)
-        progress_queue.put(("info", "Generando imagen..."))
-        img_path = llm_image.generate_image_from_lyrics(creative_prompt, steps, guidance, gen_width, gen_height, callback=callback)
-        if img_path:
-            img_path = img_path.replace(base_dir, '').lstrip('/')
-            result["img_path"] = img_path
-            with history_images_lock:
-                history_images.insert(0, img_path)
+        job_id = uuid.uuid4().hex
+        progress_queue = queue.Queue()
+    
+        song_title = request.args.get("song_title", "").strip()
+        error = None
+        if not song_title or " - " not in song_title:
+            error = "Formato incorrecto. Use 'Artista - Título'."
         else:
-            result["error"] = "No se pudo generar la imagen."
-        progress_queue.put(("done", result))
-
-    thread = threading.Thread(target=background_task)
-    thread.start()
-
+            progress_queue.put(("info", "Extrayendo la letra y creando prompt..."))
+            lyric_text = lyrics.fetch_lyrics(song_title)
+            if not lyric_text or "No se encontró la letra" in lyric_text:
+                error = "No se encontró la letra para la canción ingresada."
+        if error:
+            return Response(f"data: error:{error}\n\n", mimetype="text/event-stream")
+    
+        try:
+            steps = int(request.args.get("steps", 20))
+        except:
+            steps = 20
+        try:
+            guidance = float(request.args.get("guidance", 8.0))
+        except:
+            guidance = 8.0
+        try:
+            gen_width = int(request.args.get("gen_width", 512))
+            gen_height = int(request.args.get("gen_height", 512))
+        except:
+            gen_width, gen_height = 512, 512
+    
+        result = {"img_path": None, "error": None}
+    
+        def callback(step, timestep, latents):
+            progress = int((step / steps) * 100)
+            progress_queue.put(("progress", progress))
+    
+        def background_task():
+            progress_queue.put(("info", "Generando prompt..."))
+            creative_prompt = lyrics.generate_creative_prompt(lyric_text)
+            progress_queue.put(("info", "Generando imagen..."))
+            img_path = llm_image.generate_image_from_lyrics(creative_prompt, steps, guidance, gen_width, gen_height, callback=callback)
+            if img_path:
+                img_path = img_path.replace(base_dir, '').lstrip('/')
+                result["img_path"] = img_path
+                with history_images_lock:
+                    history_images.insert(0, img_path)
+            else:
+                result["error"] = "No se pudo generar la imagen."
+            progress_queue.put(("done", result))
+    
+        future = executor.submit(background_task)
+        jobs[job_id] = {"future": future, "queue": progress_queue}
+    
     @stream_with_context
     def event_stream():
-        while thread.is_alive() or not progress_queue.empty():
+        yield f"data: job:{job_id}\n\n"
+        while not future.done() or not progress_queue.empty():
             try:
                 event, data = progress_queue.get(timeout=0.5)
                 if event == "progress":
@@ -104,6 +118,8 @@ def generate():
                         yield f"data: error:{data['error']}\n\n"
                     else:
                         yield f"data: done:{data['img_path']}\n\n"
+                    # Finalizado: limpiar el job
+                    jobs.pop(job_id, None)
             except queue.Empty:
                 continue
     return Response(event_stream(), mimetype="text/event-stream")
