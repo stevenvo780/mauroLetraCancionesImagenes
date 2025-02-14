@@ -1,7 +1,7 @@
 import os
 import queue
 import threading
-from flask import Flask, request, render_template, Response, stream_with_context
+from flask import Flask, request, render_template, Response, stream_with_context, send_from_directory
 from dotenv import load_dotenv 
 load_dotenv() 
 
@@ -37,9 +37,9 @@ def generate():
         return Response(f"data: error:{error}\n\n", mimetype="text/event-stream")
 
     try:
-        steps = int(request.args.get("steps", 50))
+        steps = int(request.args.get("steps", 20))
     except:
-        steps = 50
+        steps = 20
     try:
         guidance = float(request.args.get("guidance", 8.0))
     except:

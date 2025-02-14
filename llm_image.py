@@ -10,7 +10,7 @@ from local_model import LocalModel
 google_model = GoogleModel()
 local_model = LocalModel()
 
-def generate_image_from_lyrics(lyrics: str, steps: int = 50, guidance: float = 8.0, gen_width: int = None, gen_height: int = None, callback=None) -> str:
+def generate_image_from_lyrics(lyrics: str, steps: int = 20, guidance: float = 8.0, gen_width: int = None, gen_height: int = None, callback=None) -> str:
     prompt_input = (
         "Dada la siguiente letra compleja y rica en detalles, genera un prompt artístico y descriptivo, de al menos 200 palabras, "
         "para crear una imagen digital de altísima calidad. Incluye detalles visuales, atmósfera cinematográfica, colores vibrantes, "
