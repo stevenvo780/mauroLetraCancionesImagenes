@@ -14,7 +14,7 @@ def fetch_lyrics(song_info: str) -> str:
     artist, title = parts[0].strip(), parts[1].strip()
     url = f"https://api.lyrics.ovh/v1/{artist}/{title}"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
             lyrics_text = data.get("lyrics", "").strip()

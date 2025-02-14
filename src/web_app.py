@@ -8,7 +8,6 @@ load_dotenv()
 from . import lyrics
 from . import llm_image
 
-# Definir la ruta base (directorio raíz)
 base_dir = os.path.dirname(os.path.dirname(__file__))
 
 app = Flask(__name__,
@@ -78,7 +77,6 @@ def generate():
         progress_queue.put(("info", "Generando imagen..."))
         img_path = llm_image.generate_image_from_lyrics(creative_prompt, steps, guidance, gen_width, gen_height, callback=callback)
         if img_path:
-            # Asegurarnos de que la ruta es relativa
             img_path = img_path.replace(base_dir, '').lstrip('/')
             result["img_path"] = img_path
             history_images.insert(0, img_path)
