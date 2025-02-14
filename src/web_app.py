@@ -15,7 +15,6 @@ app = Flask(__name__,
             template_folder=os.path.join(base_dir, "templates"),
             static_folder=os.path.join(base_dir, "static"))
 
-# Actualizar el directorio output a la raíz del proyecto
 output_dir = os.path.join(base_dir, 'output')
 history_images = []
 if os.path.exists(output_dir):
@@ -79,6 +78,8 @@ def generate():
         progress_queue.put(("info", "Generando imagen..."))
         img_path = llm_image.generate_image_from_lyrics(creative_prompt, steps, guidance, gen_width, gen_height, callback=callback)
         if img_path:
+            # Asegurarnos de que la ruta es relativa
+            img_path = img_path.replace(base_dir, '').lstrip('/')
             result["img_path"] = img_path
             history_images.insert(0, img_path)
         else:
