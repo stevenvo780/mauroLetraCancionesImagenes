@@ -24,7 +24,6 @@ def index():
 
 @app.route("/generate", methods=["GET"])
 def generate():
-    # Se obtienen los parámetros vía query string
     song_title = request.args.get("song_title", "").strip()
     error = None
     if not song_title or " - " not in song_title:
@@ -61,7 +60,7 @@ def generate():
         img_path = llm_image.generate_image_from_lyrics(lyric_text, steps, guidance, gen_width, gen_height, callback=callback)
         if img_path:
             result["img_path"] = img_path
-            history_images.append(img_path)
+            history_images.insert(0, img_path)
         else:
             result["error"] = "No se pudo generar la imagen."
         progress_queue.put(("done", result))
