@@ -7,7 +7,9 @@ def generate_image_from_lyrics(creative_prompt: str, steps: int = 20, guidance: 
     if not creative_prompt:
         return ""
     print(f"Prompt generado: {creative_prompt}")
-    output_folder = "output"
+    # Definir output_folder en la raíz del proyecto
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    output_folder = os.path.join(base_dir, "output")
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     device = "cpu"

@@ -1,8 +1,8 @@
 import requests
 import os
 from PIL import Image, ImageDraw, ImageFont
-from google_model import GoogleModel
-from local_model import LocalModel
+from .google_model import GoogleModel
+from .local_model import LocalModel
 
 google_model = GoogleModel()
 local_model = LocalModel()

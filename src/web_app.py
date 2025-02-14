@@ -5,14 +5,19 @@ from flask import Flask, request, render_template, Response, stream_with_context
 from dotenv import load_dotenv 
 load_dotenv() 
 
-import lyrics
-import llm_image
+from . import lyrics
+from . import llm_image
 
-app = Flask(__name__)
+# Definir la ruta base (directorio raíz)
+base_dir = os.path.dirname(os.path.dirname(__file__))
 
+app = Flask(__name__,
+            template_folder=os.path.join(base_dir, "templates"),
+            static_folder=os.path.join(base_dir, "static"))
+
+# Actualizar el directorio output a la raíz del proyecto
+output_dir = os.path.join(base_dir, 'output')
 history_images = []
-
-output_dir = os.path.join(os.path.dirname(__file__), 'output')
 if os.path.exists(output_dir):
     for file in os.listdir(output_dir):
         if file.endswith(".png"):
@@ -21,11 +26,11 @@ if os.path.exists(output_dir):
 @app.route("/", methods=["GET"])
 def index():
     page = request.args.get('page', 1, type=int)
-    output_dir = os.path.join(os.path.dirname(__file__), 'output')
+    output_dir = os.path.join(base_dir, 'output')
     images = []
     if os.path.exists(output_dir):
         images = [os.path.join("output", f) for f in os.listdir(output_dir) if f.endswith(".png")]
-        images.sort(key=lambda img: os.path.getmtime(os.path.join(os.path.dirname(__file__), img)), reverse=True)
+        images.sort(key=lambda img: os.path.getmtime(os.path.join(base_dir, img)), reverse=True)
     per_page = 6
     start = (page - 1) * per_page
     end = start + per_page
@@ -103,11 +108,11 @@ def generate():
 
 @app.route('/gallery', methods=["GET"])
 def gallery():
-    output_dir = os.path.join(os.path.dirname(__file__), 'output')
+    output_dir = os.path.join(base_dir, 'output')
     images = []
     if os.path.exists(output_dir):
         images = [os.path.join("output", f) for f in os.listdir(output_dir) if f.endswith(".png")]
-        images.sort(key=lambda img: os.path.getmtime(os.path.join(os.path.dirname(__file__), img)), reverse=True)
+        images.sort(key=lambda img: os.path.getmtime(os.path.join(base_dir, img)), reverse=True)
     
     page = request.args.get('page', 1, type=int)
     per_page = 6
@@ -119,7 +124,5 @@ def gallery():
 
 @app.route('/output/<path:filename>')
 def output_file(filename):
-    return send_from_directory('output', filename)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True, use_reloader=False)
+    output_dir = os.path.join(base_dir, 'output')
+    return send_from_directory(output_dir, filename)
